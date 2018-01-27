@@ -159,6 +159,105 @@ plot(1:20, sil_value_hc, type = "b", xlab = "No: of Clusters", ylab = "Silhouett
 #2. Mixed attributes - distance measure as 'gower'
 #Hierarchical Clustering procedure - mixed attributes
 #Let's now perform same hierarchical clustering using the hclust() function, for mixed datatypes
+#Scaling the numeric attributes
+str(cereals_data_copy)
+cereals_data_copy[,num_Attr] = scale(cereals_data_copy[,num_Attr],scale=T,center=T)
+
+#Calculating gower distance
+library(cluster)
+gower_dist = daisy(cereals_data_copy,metric = "gower")
+
+#Now that you have the distance matrix, do the hclust()
+hc_fit_mixed <- hclust(gower_dist, method = "ward.D2")
+#We can display the dendogram for hierarchical clustering, using the plot() function
+plot(hc_fit_mixed )
+
+#Cut the tree to 6 clusters, using the cutree() function
+
+points_hc_mixed <- cutree(hc_fit_mixed , k = 6)
+
+# Store the clusters in a data frame along with the cereals data
+cereals_clusts_hc_mixed <- cbind(points_hc_mixed, cereals_data_copy)
+
+# Have a look at the head of the new data frame
+colnames(cereals_clusts_hc_mixed)[1] <- "cluster_hc_mixed"
+head(cereals_clusts_hc_mixed)
+
+#Plot a new dendogram, with each of the clusters being surrounded by a border, using the rect.hclust() function
+
+plot(hc_fit_mixed)
+rect.hclust(hc_fit_mixed, k = 5, border = "red")
+
+
+#Quality of Clusters Created
+#Shiloutte value - mixed
+
+library(cluster)
+# daisy -Compute all the pairwise dissimilarities (distances) between observations in the data set
+gower_dist = daisy(x = cereals_data_copy, metric = "gower")
+
+sil_value_hc_mixed = silhouette(points_hc_mixed, dist = gower_dist)
+plot(sil_value_hc_mixed)
 
 
 
+
+
+
+#########################K-Means Clustering
+#K-Means Clustering procedure
+#Build a basic kmeans model with k = 2, using the kmeans() function
+
+
+set.seed(123)
+km_basic <- kmeans(cereals_data, centers = 2, nstart = 20)
+
+str(km_basic)
+fviz_cluster(km_basic, cereals_data)
+
+#The kmeans() function returns a list of 9 objects which include the cluster assignments ("cluster"), cluster centers ("centers"), etc. You can further explore the returned object by calling the str() function on the returned object and going through the documentation
+
+#Let's now build a screen plot to choose a "k"
+
+
+# Initialize wss to 0
+wss <- 0
+
+# From 1 upto upto 10 cluster centers, fit the kmeans model
+for (i in 1:20) {
+  cfit = kmeans(cereals_data, centers = i, nstart = 20)
+  # Store the sum of within sum of square
+  wss[i] <- sum(cfit$withinss)
+}
+plot(1:20, wss, type = "b")
+
+set.seed(123)
+fviz_nbclust(cereals_data, kmeans, method = "wss")
+
+
+#Let's choose k as 6 and cluster the data
+set.seed(123)
+km_clust <- kmeans(cereals_data, 6)
+#Not using 'nstart' parameter for reproducability during cluster stability checking. Initial centriods would be chosen based on set seed here.
+
+# after choosing k as 6, let's store the cluster groupings along with the data in a new data frame
+km_points <- km_clust$cluster
+
+# Store the cluster assignments in a new data frame
+cereals_clusts_km <- as.data.frame(cbind(km_clust$cluster, cereals_data))
+
+# Look at the head of the data
+head(cereals_clusts_km)
+
+colnames(cereals_clusts_km)[1] <- "cluster_km"
+fviz_cluster(km_clust, cereals_data)
+
+#K-Means Cluster Quality
+#Shiloutte value
+
+library(cluster)
+dist = daisy(x = cereals_data, metric = "euclidean")
+## Warning in daisy(x = cereals_data, metric = "euclidean"): binary
+## variable(s) 13, 14, 15 treated as interval scaled
+sil_value = silhouette(km_clust$cluster, dist = dist)
+plot(sil_value)
